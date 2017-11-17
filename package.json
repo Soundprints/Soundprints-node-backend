@@ -1,0 +1,29 @@
+{
+  "name": "soundprints-node-backend",
+  "version": "1.0.0",
+  "description": "Node app for Soundprints backend",
+  "main": "app.js",
+  "scripts": {
+    "start": "node ./app.js",
+    "dev": "nodemon ./app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Soundprints/Soundprints-node-backend"
+  },
+  "license": "",
+  "dependencies": {
+    "body-parser": "1.18.2",
+    "cors": "2.8.4",
+    "errorhandler": "1.5.0",
+    "express": "4.16.0",
+    "express-session": "1.15.6",
+    "method-override": "2.3.10",
+    "mongoose": "4.13.3",
+    "morgan": "1.9.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  }
+}
