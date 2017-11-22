@@ -4,8 +4,8 @@ var mongoose = require('mongoose');
 var User = mongoose.model('User');
 
 passport.use(new FacebookTokenStrategy({
-        clientID: '302659940232001',
-        clientSecret: 'd7d3e484f483f9945a45bf6d4b671a84'
+        clientID: process.env.FB_APP_ID,
+        clientSecret: process.env.FB_APP_SECRET
     },
     function (accessToken, refreshToken, profile, done) {
         User.upsertFbUser(accessToken, refreshToken, profile, function(err, user) {

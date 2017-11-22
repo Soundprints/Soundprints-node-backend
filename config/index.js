@@ -1,3 +1,4 @@
 module.exports = {
-    secret: process.env.NODE_ENV === 'production' ? process.env.SECRET : 'secret'
+    facebookAppId: process.env.FB_APP_ID,
+    facebookAppSecret: process.env.FB_APP_SECRET
 };
