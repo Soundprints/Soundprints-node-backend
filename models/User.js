@@ -43,7 +43,7 @@ UserSchema.statics.upsertFbUser = function(accessToken, refreshToken, profile, c
                 firstName: profile.name.givenName,
                 lastName: profile.name.familyName,
                 displayName: profile.displayName,
-                // profileImageUrl: // TODO: Figure out where to get the profile image
+                profileImageUrl: profile.photos[0].value,
                 sounds: []
             });
 
