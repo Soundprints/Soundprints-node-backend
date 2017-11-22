@@ -20,8 +20,6 @@ var facebookAuthentication = function(req, res, next) {
 var authentication = function(req, res, next) {
     const provider = req.headers.provider;
 
-    console.log(req.header.provider);
-
     // TODO: Implement auth for other providers
     if (provider === 'facebook') {
         facebookAuthentication(req, res, next);
