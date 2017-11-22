@@ -1,6 +1,7 @@
 var mongoose = require('mongoose');
 var router = require('express').Router();
 var Sound = mongoose.model('Sound');
+var ApiError = require('./apiErrors').ApiError;
 
 function areNumbers(numberCandidates) {
     for (item in numberCandidates) {
@@ -11,9 +12,9 @@ function areNumbers(numberCandidates) {
     return true;
 }
 
-router.get('/sounds', function(req, res, next) {
+router.get('/', function(req, res, next) {
     if (!req.query.lat || !req.query.long || !req.query.maxDistance) {
-        const error = ApiErrorType.api.missingParameters;
+        const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
 
@@ -22,16 +23,16 @@ router.get('/sounds', function(req, res, next) {
     const maxDistance = parseFloat(req.query.maxDistance);
 
     if (!areNumbers([lat, long, maxDistance])) {
-        const error = ApiErrorType.api.invalidParameters.nan;
+        const error = ApiError.api.invalidParameters.nan;
         return error.generateResponse(res);
     }
 
     if (lat < -90 || lat > 90 || long < -180 || long > 180) {
-        const error = ApiErrorType.api.invalidParameters.latLongOutOfRange;
+        const error = ApiError.api.invalidParameters.latLongOutOfRange;
         return error.generateResponse(res);
     }
     if (maxDistance < 0) {
-        const error = ApiErrorType.api.invalidParameters.invalidDistance.general;
+        const error = ApiError.api.invalidParameters.invalidDistance.general;
         return error.generateResponse(res);
     }
 
@@ -43,15 +44,15 @@ router.get('/sounds', function(req, res, next) {
     if (req.query.minDistance) {
         const minDistance = parseFloat(req.query.minDistance);
         if (!areNumbers([minDistance])) {
-            const error = ApiErrorType.api.invalidParameters.nan;
+            const error = ApiError.api.invalidParameters.nan;
             return error.generateResponse(res);
         }
         if (minDistance < 0) {
-            const error = ApiErrorType.api.invalidParameters.invalidDistance.minMoreThanMax;
+            const error = ApiError.api.invalidParameters.invalidDistance.minMoreThanMax;
             return error.generateResponse(res);
         }
         if (minDistance > maxDistance) {
-            const error = ApiErrorType.api.invalidParameters.invalidDistance.minMoreThanMax;
+            const error = ApiError.api.invalidParameters.invalidDistance.minMoreThanMax;
             return error.generateResponse(res);
         }
 
@@ -61,11 +62,11 @@ router.get('/sounds', function(req, res, next) {
     if (req.query.limit) {
         const limit = parseInt(req.query.limit, 10);
         if (!areNumbers([limit])) {
-            const error = ApiErrorType.api.invalidParameters.nan;
+            const error = ApiError.api.invalidParameters.nan;
             return error.generateResponse(res);
         }
         if (limit < 0) {
-            const error = ApiErrorType.api.invalidParameters.invalidDistance.minMoreThanMax;
+            const error = ApiError.api.invalidParameters.invalidDistance.minMoreThanMax;
             return error.generateResponse(res);
         }
 
@@ -73,7 +74,7 @@ router.get('/sounds', function(req, res, next) {
     }
 
     const point = {
-        type = 'Point',
+        type: 'Point',
         coordinates: [long, lat]
     }
     Sound.geoNear(point, queryOptions, function(error, results, stats) {
@@ -81,3 +82,5 @@ router.get('/sounds', function(req, res, next) {
     });
 
 });
+
+module.exports = router;

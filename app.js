@@ -5,6 +5,7 @@ express = require('express'),
 bodyParser = require('body-parser'),
 session = require('express-session'),
 cors = require('cors'),
+passport = require('passport'),
 errorhandler = require('errorhandler'),
 mongoose = require('mongoose');
 
@@ -35,10 +36,15 @@ if(isProduction){
 } else {
     // TODO: connect to the testing MongoDB
     // mongoose.connect('mongodb://localhost/conduit');
+    mongoose.connect('mongodb://localhost/db');
     mongoose.set('debug', true);
 }
 
 // TODO: add require for models, e.g. require('./models/User');
+
+require('./models/User');
+require('./models/Sound');
+require('./config/passport');
 
 app.use(require('./routes'));
 
