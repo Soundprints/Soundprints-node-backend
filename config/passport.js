@@ -8,5 +8,7 @@ passport.use(new FacebookTokenStrategy({
         clientSecret: 'TODO: Add client secret HERE'
     },
     function (accessToken, refreshToken, profile, done) {
-        // TODO: Add upsert FB user
+        User.upsertFbUser(accessToken, refreshToken, profile, function(err, user) {
+            return done(err, user);
+        });
     }));

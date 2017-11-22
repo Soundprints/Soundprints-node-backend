@@ -26,6 +26,9 @@ const ApiErrorType = {
     },
     auth: {}, // TODO: Implement auth errors when auth is added
     api: {
+        auth: {
+            unauthorized: new ApiError(401, 'api/auth/unathorized', 'Unauthorized')
+        },
         missingParameters: new ApiError(404, 'api/missing-parameters', 'Missing parameters'),
         invalidParameters: {
             nan: new ApiError(404, 'api/invalid-parameters/nan', 'Parameter should be a number and it is not'),
@@ -37,3 +40,5 @@ const ApiErrorType = {
         }
     }
 };
+
+module.exports.ApiError = ApiErrorType;

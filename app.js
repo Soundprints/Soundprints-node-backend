@@ -40,6 +40,9 @@ if(isProduction){
 
 // TODO: add require for models, e.g. require('./models/User');
 
+require('./models/User');
+require('./models/Sound');
+
 app.use(require('./routes'));
 
 /// catch 404 and forward to error handler
