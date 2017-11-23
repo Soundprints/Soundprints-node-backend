@@ -1,11 +1,13 @@
+
 var mongoose = require('mongoose');
 var router = require('express').Router();
 var Sound = mongoose.model('Sound');
 var ApiError = require('./apiErrors').ApiError;
+var storage = require('../../storage/storage');
 
 function areNumbers(numberCandidates) {
-    for (item in numberCandidates) {
-        if (isNaN(item)) {
+    for (var i = 0; i < numberCandidates.length; i++) {
+        if (isNaN(numberCandidates[i])) {
             return false;
         }
     }
@@ -78,9 +80,68 @@ router.get('/', function(req, res, next) {
         coordinates: [long, lat]
     }
     Sound.geoNear(point, queryOptions, function(error, results, stats) {
-        // TODO: Handle the results and send them back in the response
+        if (error) {
+            const error = ApiError.general.serverError;
+            return error.generateResponse(res);
+        } else {
+            handleSoundResults(results, function(transformedResults) {
+                res.status(200).json(JSON.stringify(transformedResults));
+            });
+        }
     });
 
 });
+
+router.get('/:soundId/resourceUrl', function(req, res, next) {
+    var minutes = 10; // Number of minutes the returned URL will be valid for. Default is 10.
+    const givenMinutes = parseInt(req.query.minutes, 10);
+    if (areNumbers([givenMinutes])) {
+        minutes = givenMinutes;
+    }
+
+    Sound.findById(req.params.soundId, function(error, result) {
+        if (result) {
+            if (result.storageFileName) {
+                storage.obtainSoundSignedUrl(result.storageFileName, minutes, function(error, resourceUrl) {
+                    if (resourceUrl) {
+                        res.status(200).json(JSON.stringify({ url: resourceUrl }));
+                    } else {
+                        // The link generation should not fail, so treat this as a server error
+                        const error = ApiError.general.serverError;
+                        return error.generateResponse(res);
+                    }
+                })
+            } else {
+                // storageFileName should always be present, so treat this as a server error
+                const error = ApiError.general.serverError;
+                return error.generateResponse(res);    
+            }
+        } else {
+            const error = ApiError.api.notFound;
+            return error.generateResponse(res);
+        }
+    });
+});
+
+var handleSoundResults = function(results, callback) {
+    var resultsToReturn = results.map(function(result) {
+        var original = result.obj;
+        var transformed = {};
+
+        transformed.id = original._id;
+        transformed.name = original.name;
+        transformed.description = original.description;
+        transformed.location = {
+            lat: original.location.coordinates[1],
+            long: original.location.coordinates[0]
+        };
+        transformed.userId = original.user;
+        transformed.distance = result.dis;
+
+        return transformed;
+    });
+
+    callback(resultsToReturn);
+}
 
 module.exports = router;

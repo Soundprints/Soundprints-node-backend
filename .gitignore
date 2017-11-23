@@ -57,3 +57,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# Google cloud storage keyfile
+Soundprints-c479fa7e268d.json
+
+# Start node script
+start-node.sh

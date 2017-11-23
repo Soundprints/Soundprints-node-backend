@@ -12,7 +12,8 @@ var SoundSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
-    }
+    },
+    storageFileName: String
 }, { timestamps: true });
 
 SoundSchema.statics.addMockedSounds = function(userId, callback) {

@@ -37,7 +37,8 @@ const ApiErrorType = {
                 general: new ApiErrorObject(404, 'api/invalid-parameters/invalid-distance/general', 'Invalid distance (must not be negative)'),
                 minMoreThanMax: new ApiErrorObject(404, 'api/invalid-parameters/invalid-distance/min-more-than-max', 'Min distance must be less than max distance')
             },
-        }
+        },
+        notFound: new ApiErrorObject(404, 'api/not-found', 'Not found')
     }
 };
 
