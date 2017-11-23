@@ -15,22 +15,22 @@ function areNumbers(numberCandidates) {
 }
 
 router.get('/', function(req, res, next) {
-    if (!req.query.lat || !req.query.long || !req.query.maxDistance) {
+    if (!req.query.lat || !req.query.lon || !req.query.maxDistance) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
 
     const lat = parseFloat(req.query.lat);
-    const long = parseFloat(req.query.long);
+    const lon = parseFloat(req.query.lon);
     const maxDistance = parseFloat(req.query.maxDistance);
 
-    if (!areNumbers([lat, long, maxDistance])) {
+    if (!areNumbers([lat, lon, maxDistance])) {
         const error = ApiError.api.invalidParameters.nan;
         return error.generateResponse(res);
     }
 
-    if (lat < -90 || lat > 90 || long < -180 || long > 180) {
-        const error = ApiError.api.invalidParameters.latLongOutOfRange;
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
     }
     if (maxDistance < 0) {
@@ -77,7 +77,7 @@ router.get('/', function(req, res, next) {
 
     const point = {
         type: 'Point',
-        coordinates: [long, lat]
+        coordinates: [lon, lat]
     }
     Sound.geoNear(point, queryOptions, function(error, results, stats) {
         if (error) {
@@ -123,6 +123,40 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
     });
 });
 
+router.post('/addMockedSounds', function(req, res, next) {
+    if (!req.query.lat || !req.query.lon || !req.query.maxDistance || !req.query.count) {
+        const error = ApiError.api.missingParameters;
+        return error.generateResponse(res);
+    }
+
+    const lat = parseFloat(req.query.lat);
+    const lon = parseFloat(req.query.lon);
+    const maxDistance = parseFloat(req.query.maxDistance);
+    const count = parseInt(req.query.count, 10);
+
+    if (!areNumbers([lat, lon, maxDistance, count])) {
+        const error = ApiError.api.invalidParameters.nan;
+        return error.generateResponse(res);
+    }
+
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        const error = ApiError.api.invalidParameters.latlonOutOfRange;
+        return error.generateResponse(res);
+    }
+    if (maxDistance < 0) {
+        const error = ApiError.api.invalidParameters.invalidDistance.general;
+        return error.generateResponse(res);
+    }
+    if (count < 1) {
+        const error = ApiError.api.invalidParameters.general;
+        return error.generateResponse(res);
+    }
+
+    Sound.addMockedSounds(req.userId, lat, lon, maxDistance, count);
+
+    res.status(200).json(JSON.stringify({ message: 'ok' }));
+});
+
 var handleSoundResults = function(results, callback) {
     var resultsToReturn = results.map(function(result) {
         var original = result.obj;
@@ -133,7 +167,7 @@ var handleSoundResults = function(results, callback) {
         transformed.description = original.description;
         transformed.location = {
             lat: original.location.coordinates[1],
-            long: original.location.coordinates[0]
+            lon: original.location.coordinates[0]
         };
         transformed.userId = original.user;
         transformed.distance = result.dis;

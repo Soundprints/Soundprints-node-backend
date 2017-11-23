@@ -12,6 +12,7 @@ var facebookAuthentication = function(req, res, next) {
                 return error.generateResponse(res);
             }
         } else {
+            req.userId = user._id;
             next();
         }
     })(req, res, next);
