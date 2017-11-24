@@ -15,11 +15,13 @@ Promise.Promise.promisifyAll(GoogleCloudStorage);
 Promise.Promise.promisifyAll(soundsBucket);
 
 var obtainSoundSignedUrl = function(storageFileName, expirationTimeInMinutes, callback) {
+    // Create configuration for the signed link. Allow read and set expiration time.
     var config = {
         action: 'read',
         expires: (new Date()).getTime() + (60*expirationTimeInMinutes*1000) // current time + expirationTimeInMinutes minutes
     }
     var file = soundsBucket.file(storageFileName);
+    // Get the signed URL for the file and return it in callback
     file.getSignedUrl(config, function(error, signedUrl) {
         callback(error, signedUrl);
     });

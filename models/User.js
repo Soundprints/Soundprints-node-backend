@@ -26,13 +26,17 @@ var UserSchema = new mongoose.Schema({
     ]
 }, { timestamps: true });
 
+// Static function for upserting a Facebook user. If the user already exists do nothing. If it doesn't create and save the new user
 UserSchema.statics.upsertFbUser = function(accessToken, refreshToken, profile, callback) {
     var that = this;
+    // Find the user from provider 'facebook' and profile ID = profile.id
     return this.findOne({
         'provider.name': fbProviderName,
         'provider.profileId': profile.id
     }, function(err, user) {
+        // Check if this user exists
         if (!user) {
+            // Create the new user
             var newUser = new that({
                 email: profile.emails[0].value,
                 provider: {
@@ -47,10 +51,8 @@ UserSchema.statics.upsertFbUser = function(accessToken, refreshToken, profile, c
                 sounds: []
             });
 
+            // Save the new user
             newUser.save(function(error, savedUser) {
-                if (error) {
-                    console.log(error);
-                }
                 return callback(error, savedUser);
             })
         } else {
