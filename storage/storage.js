@@ -1,6 +1,8 @@
 
 var GoogleCloudStorage = require('@google-cloud/storage');
 var Promise = require('bluebird');
+const readChunk = require('read-chunk');
+const fileType = require('file-type');
 
 var storage = GoogleCloudStorage({
     projectId: process.env.GOOGLE_CLOUD_STORAGE_PROJECT_ID,
@@ -23,4 +25,16 @@ var obtainSoundSignedUrl = function(storageFileName, expirationTimeInMinutes, ca
     });
 };
 
+var uploadSound = function(localPath, soundObject, callback) {
+    const buffer = readChunk.sync(localPath, 0, 4100);
+    const fileInfo = fileType(buffer);
+
+    const storageDestination = soundObject._id + '.' + fileInfo.ext;
+
+    soundsBucket.upload(localPath, { destination: storageDestination }, function(err, file, apiResponse) {
+        callback(err, storageDestination);
+    });
+}
+
 module.exports.obtainSoundSignedUrl = obtainSoundSignedUrl;
+module.exports.uploadSound = uploadSound;

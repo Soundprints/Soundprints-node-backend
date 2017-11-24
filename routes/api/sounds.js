@@ -1,9 +1,15 @@
 
 var mongoose = require('mongoose');
 var router = require('express').Router();
-var Sound = mongoose.model('Sound');
 var ApiError = require('./apiErrors').ApiError;
 var storage = require('../../storage/storage');
+var multer = require('multer');
+var fs = require('fs');
+
+var Sound = mongoose.model('Sound');
+var User = mongoose.model('User');
+
+var upload = multer({ dest: 'sound-uploads/' });
 
 function areNumbers(numberCandidates) {
     for (var i = 0; i < numberCandidates.length; i++) {
@@ -12,6 +18,14 @@ function areNumbers(numberCandidates) {
         }
     }
     return true;
+}
+
+function latValid(lat) {
+    return lat >= -90 && lat <= 90;
+}
+
+function lonValid(lon) {
+    return lon >= -180 && lon <= 180;
 }
 
 router.get('/', function(req, res, next) {
@@ -29,7 +43,7 @@ router.get('/', function(req, res, next) {
         return error.generateResponse(res);
     }
 
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    if (!latValid(lat) || !lonValid(lon)) {
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
     }
@@ -139,7 +153,7 @@ router.post('/addMockedSounds', function(req, res, next) {
         return error.generateResponse(res);
     }
 
-    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    if (!latValid(lat) || !lonValid(lon)) {
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
     }
@@ -177,5 +191,75 @@ var handleSoundResults = function(results, callback) {
 
     callback(resultsToReturn);
 }
+
+router.post('/upload', upload.single('file'), function (req, res, next) {
+
+    if (!req.file) {
+        const error = ApiError.api.upload.noFile;
+        return error.generateResponse(res);
+    }
+
+    if (!req.body.name || !req.body.description || !req.body.lat || !req.body.lon) {
+        const error = ApiError.api.missingParameters;
+        return error.generateResponse(res);
+    }
+
+    const name = req.body.name;
+    const description = req.body.description;
+    const lat = parseFloat(req.body.lat);
+    const lon = parseFloat(req.body.lon);
+
+    if (!areNumbers([lat, lon])) {
+        const error = ApiError.api.invalidParameters.nan;
+        return error.generateResponse(res);
+    }
+
+    if (!latValid(lat) || !lonValid(lon)) {
+        const error = ApiError.api.invalidParameters.latlonOutOfRange;
+        return error.generateResponse(res);
+    }
+
+    // TODO: Figure out how to get the duration of (opus, other formats are not a problem) files
+
+    var newSound = new Sound({
+        name: name,
+        description: description,
+        location: {
+            type: 'Point',
+            coordinates: [lon, lat]
+        },
+        user: mongoose.Types.ObjectId(req.userId)
+    })
+
+    newSound.save(function(error, savedSound) {
+        if (error) {
+            const error = ApiError.general.serverError;
+            return error.generateResponse(res);
+        }
+
+        storage.uploadSound(req.file.path, savedSound, function(err, storageFileName) {
+
+            fs.unlinkSync(req.file.path);
+
+            if (err) {
+                savedSound.remove(function(err, sound) {
+                    const error = ApiError.general.serverError;
+                    return error.generateResponse(res);
+                })
+            } else {
+                savedSound.storageFileName = storageFileName;
+
+                savedSound.save();
+
+                User.findById(req.userId, function(err, user) {
+                    user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
+                    user.save();
+
+                    res.status(200).json(JSON.stringify({ message: 'ok' }));
+                });
+            }
+        });
+    })
+});
 
 module.exports = router;

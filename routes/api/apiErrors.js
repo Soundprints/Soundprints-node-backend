@@ -38,7 +38,10 @@ const ApiErrorType = {
                 minMoreThanMax: new ApiErrorObject(404, 'api/invalid-parameters/invalid-distance/min-more-than-max', 'Min distance must be less than max distance')
             },
         },
-        notFound: new ApiErrorObject(404, 'api/not-found', 'Not found')
+        notFound: new ApiErrorObject(404, 'api/not-found', 'Not found'),
+        upload: {
+            noFile: new ApiErrorObject(404, 'api/upload/no-file', 'No file received on upload')
+        }
     }
 };
 
