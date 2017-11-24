@@ -138,6 +138,7 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
 });
 
 router.post('/addMockedSounds', function(req, res, next) {
+
     if (!req.query.lat || !req.query.lon || !req.query.maxDistance || !req.query.count) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
@@ -194,26 +195,31 @@ var handleSoundResults = function(results, callback) {
 
 router.post('/upload', upload.single('file'), function (req, res, next) {
 
+    // Check if uploaded file is present
     if (!req.file) {
         const error = ApiError.api.upload.noFile;
         return error.generateResponse(res);
     }
 
+    // Check if name, description, latitude and longitude are present
     if (!req.body.name || !req.body.description || !req.body.lat || !req.body.lon) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
 
+    // Extract the parameters
     const name = req.body.name;
     const description = req.body.description;
     const lat = parseFloat(req.body.lat);
     const lon = parseFloat(req.body.lon);
 
+    // Check if latitude and longitude are numbers
     if (!areNumbers([lat, lon])) {
         const error = ApiError.api.invalidParameters.nan;
         return error.generateResponse(res);
     }
 
+    // Check if latitude and longitude are valid
     if (!latValid(lat) || !lonValid(lon)) {
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
@@ -221,6 +227,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
 
     // TODO: Figure out how to get the duration of (opus, other formats are not a problem) files
 
+    // Create a new Sound model instance
     var newSound = new Sound({
         name: name,
         description: description,
@@ -231,26 +238,30 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         user: mongoose.Types.ObjectId(req.userId)
     })
 
+    // Save the new sound object
     newSound.save(function(error, savedSound) {
         if (error) {
             const error = ApiError.general.serverError;
             return error.generateResponse(res);
         }
 
+        // Upload the uploaded file to cloud storage
         storage.uploadSound(req.file.path, savedSound, function(err, storageFileName) {
 
+            // Delete the local uploaded file
             fs.unlinkSync(req.file.path);
 
             if (err) {
-                savedSound.remove(function(err, sound) {
-                    const error = ApiError.general.serverError;
-                    return error.generateResponse(res);
-                })
+                savedSound.remove();
+                const error = ApiError.general.serverError;
+                return error.generateResponse(res);
             } else {
-                savedSound.storageFileName = storageFileName;
 
+                // Update the storage file name in the sound object in DB
+                savedSound.storageFileName = storageFileName;
                 savedSound.save();
 
+                // Add new sound to the user
                 User.findById(req.userId, function(err, user) {
                     user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
                     user.save();

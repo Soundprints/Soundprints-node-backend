@@ -26,11 +26,15 @@ var obtainSoundSignedUrl = function(storageFileName, expirationTimeInMinutes, ca
 };
 
 var uploadSound = function(localPath, soundObject, callback) {
+
+    // Obtain info of file (extension and mimetype)
     const buffer = readChunk.sync(localPath, 0, 4100);
     const fileInfo = fileType(buffer);
 
+    // Generate the name under which the file will be stored on cloud storage -> SOUND_ID.EXT
     const storageDestination = soundObject._id + '.' + fileInfo.ext;
 
+    // Upload local file to the 'sounds' bucket
     soundsBucket.upload(localPath, { destination: storageDestination }, function(err, file, apiResponse) {
         callback(err, storageDestination);
     });
