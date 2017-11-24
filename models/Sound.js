@@ -57,4 +57,6 @@ SoundSchema.statics.addMockedSounds = function(userId, lat, lon, radius, count) 
     this.insertMany(sounds);
 }
 
+SoundSchema.index({ location: '2dsphere' });
+
 mongoose.model('Sound', SoundSchema);
