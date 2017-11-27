@@ -98,6 +98,26 @@ router.get('/', function(req, res, next) {
         queryOptions.limit = limit;
     }
 
+    // Handle only last day parameter
+    if (req.query.onlyLastDay === 'true') {
+        var oneDayBefore = new Date();
+        oneDayBefore.setDate(oneDayBefore.getDate()-1);
+
+        if (queryOptions.query) {
+            // Add to existing query if it already exists
+            queryOptions.query.createdAt = {
+                $gt: oneDayBefore.toISOString()
+            }
+        } else {
+            // Create a new query and add it to options
+            queryOptions.query = {
+                createdAt: {
+                    $gt: oneDayBefore.toISOString()
+                }
+            }
+        }
+    }
+
     const point = {
         type: 'Point',
         coordinates: [lon, lat]
