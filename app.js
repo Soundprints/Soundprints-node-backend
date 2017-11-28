@@ -31,12 +31,21 @@ if (!isProduction) {
 }
 
 if(isProduction){
-    // TODO: connect to the production MongoDB
-    // mongoose.connect(process.env.MONGODB_URI);
+    mongoose.connect(process.env.MONGODB_PRODUCTION_URI, { useMongoClient: true }, (err) => {
+        if (err) {
+            console.log('MongoDB connection error: ' + err);
+            console.log('Closing node');
+            process.exit(1);
+        }
+    });
 } else {
-    // TODO: connect to the testing MongoDB
-    // mongoose.connect('mongodb://localhost/conduit');
-    mongoose.connect('mongodb://localhost/db');
+    mongoose.connect(process.env.MONGODB_DEVELOPMENT_URI, { useMongoClient: true }, (err) => {
+        if (err) {
+            console.log('MongoDB connection error: ' + err);
+            console.log('Closing node');
+            process.exit(1);
+        }
+    });
     mongoose.set('debug', true);
 }
 
@@ -86,3 +95,5 @@ app.use(function(err, req, res, next) {
 var server = app.listen( process.env.PORT || 8080, function(){
     console.log('Listening on port ' + server.address().port);
 });
+
+module.exports.isProduction = isProduction;
