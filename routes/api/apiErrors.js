@@ -37,6 +37,7 @@ const ApiErrorType = {
                 general: new ApiErrorObject(404, 'api/invalid-parameters/invalid-distance/general', 'Invalid distance (must not be negative)'),
                 minMoreThanMax: new ApiErrorObject(404, 'api/invalid-parameters/invalid-distance/min-more-than-max', 'Min distance must be less than max distance')
             },
+            invalidDuration: new ApiErrorObject(404, 'api/invalid-parameters/invalid-duration', 'Duration should be positive')
         },
         notFound: new ApiErrorObject(404, 'api/not-found', 'Not found'),
         upload: {

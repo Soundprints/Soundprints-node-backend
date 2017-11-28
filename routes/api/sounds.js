@@ -247,7 +247,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     }
 
     // Check if name, description, latitude and longitude are present
-    if (!req.body.name || !req.body.description || !req.body.lat || !req.body.lon) {
+    if (!req.body.name || !req.body.description || !req.body.lat || !req.body.lon || !req.body.duration) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
@@ -257,9 +257,10 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     const description = req.body.description;
     const lat = parseFloat(req.body.lat);
     const lon = parseFloat(req.body.lon);
+    const duration = parseFloat(req.body.duration);
 
     // Check if latitude and longitude are numbers
-    if (!areNumbers([lat, lon])) {
+    if (!areNumbers([lat, lon, duration])) {
         const error = ApiError.api.invalidParameters.nan;
         return error.generateResponse(res);
     }
@@ -270,12 +271,17 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         return error.generateResponse(res);
     }
 
-    // TODO: Figure out how to get the duration of (opus, other formats are not a problem) files
+    // Check if duration is valid
+    if (!duration > 0) {
+        const error = ApiError.api.invalidParameters.invalidDuration;
+        return error.generateResponse(res);
+    }
 
     // Create a new Sound model instance
     var newSound = new Sound({
         name: name,
         description: description,
+        duration: duration,
         location: {
             type: 'Point',
             coordinates: [lon, lat]
