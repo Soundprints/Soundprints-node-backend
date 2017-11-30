@@ -28,7 +28,7 @@ var obtainSoundSignedUrl = function(storageFileName, expirationTimeInMinutes, ca
     var file = soundsBucket.file(storageFileName);
     // Get the signed URL for the file and return it in callback
     file.getSignedUrl(config, function(error, signedUrl) {
-        callback(error, signedUrl);
+        callback(error, signedUrl, expires);
     });
 };
 

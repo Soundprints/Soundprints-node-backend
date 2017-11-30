@@ -99,7 +99,7 @@ router.get('/', function(req, res, next) {
     }
 
     // Handle only last day parameter
-    if (req.query.onlyLastDay === 'true') {
+    if (req.query.onlyLastDay === 'true' || req.query.onlyLastDay === 1) {
         var oneDayBefore = new Date();
         oneDayBefore.setDate(oneDayBefore.getDate()-1);
 
@@ -124,19 +124,58 @@ router.get('/', function(req, res, next) {
     }
 
     // Execute the geoNear query
+
     Sound.geoNear(point, queryOptions, function(error, results, stats) {
-        if (error) {
-            const error = ApiError.general.serverError;
-            return error.generateResponse(res);
-        } else {
-            // Handle the results and return success response
-            handleSoundResults(results, function(transformedResults) {
-                res.status(200).json(JSON.stringify(transformedResults));
-            });
-        }
+
+        // Map the results into Sound objects
+        var results = results.map(function(result) {
+            var mapped = new Sound(result.obj);
+            mapped.distance = result.distance;
+            return mapped;
+        });
+        // Populate the Sound objects with certain user properties
+        Sound.populate(results, { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
+            if (error) {
+                const error = ApiError.general.serverError;
+                return error.generateResponse(res);
+            } else {
+                // Handle the results and return success response
+                handleSoundResults(populatedResults, function(transformedResults) {
+                    res.status(200).json(JSON.stringify({ sounds: transformedResults }));
+                });
+            }
+        })
     });
 
 });
+
+var handleSoundResults = function(results, callback) {
+    // Transform the given results to what the response will contain
+    var resultsToReturn = results.map(function(result) {
+        var original = result;
+        var transformed = {};
+
+        // Set the properties that we want to expose to the API response
+        transformed.id = original._id;
+        transformed.name = original.name;
+        transformed.description = original.description;
+        transformed.location = {
+            lat: original.location.coordinates[1],
+            lon: original.location.coordinates[0]
+        };
+        transformed.user = {
+            id: original.user._id,
+            displayName: original.user.displayName,
+            profileImageUrl: original.user.profileImageUrl
+        }
+        transformed.distance = original.dis;
+        transformed.duration = original.duration;
+
+        return transformed;
+    });
+
+    callback(resultsToReturn);
+}
 
 router.get('/:soundId/resourceUrl', function(req, res, next) {
     var minutes = 10; // Number of minutes the returned URL will be valid for. Default is 10.
@@ -152,9 +191,9 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
         if (result) {
             if (result.storageFileName) {
                 // Get the cloud storage signed URL
-                storage.obtainSoundSignedUrl(result.storageFileName, minutes, function(error, resourceUrl) {
+                storage.obtainSoundSignedUrl(result.storageFileName, minutes, function(error, resourceUr, expires) {
                     if (resourceUrl) {
-                        res.status(200).json(JSON.stringify({ url: resourceUrl }));
+                        res.status(200).json(JSON.stringify({ url: resourceUrl, expirationDate: expires.getTime()/1000.0 }));
                     } else {
                         // The link generation should not fail, so treat this as a server error
                         const error = ApiError.general.serverError;
@@ -214,29 +253,6 @@ router.post('/addMockedSounds', function(req, res, next) {
 
     res.status(200).json(JSON.stringify({ message: 'ok' }));
 });
-
-var handleSoundResults = function(results, callback) {
-    // Transform the given results to what the response will contain
-    var resultsToReturn = results.map(function(result) {
-        var original = result.obj;
-        var transformed = {};
-
-        // Set the properties that we want to expose to the API response
-        transformed.id = original._id;
-        transformed.name = original.name;
-        transformed.description = original.description;
-        transformed.location = {
-            lat: original.location.coordinates[1],
-            lon: original.location.coordinates[0]
-        };
-        transformed.userId = original.user;
-        transformed.distance = result.dis;
-
-        return transformed;
-    });
-
-    callback(resultsToReturn);
-}
 
 router.post('/upload', upload.single('file'), function (req, res, next) {
 
