@@ -193,7 +193,7 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
                 // Get the cloud storage signed URL
                 storage.obtainSoundSignedUrl(result.storageFileName, minutes, function(error, resourceUr, expires) {
                     if (resourceUrl) {
-                        res.status(200).json(JSON.stringify({ url: resourceUrl, expirationDate: expires.getTime()/1000.0 }));
+                        res.status(200).json({ url: resourceUrl, expirationDate: expires.getTime()/1000.0 });
                     } else {
                         // The link generation should not fail, so treat this as a server error
                         const error = ApiError.general.serverError;
@@ -251,7 +251,7 @@ router.post('/addMockedSounds', function(req, res, next) {
     // Add mocked sounds
     Sound.addMockedSounds(req.userId, lat, lon, maxDistance, count);
 
-    res.status(200).json(JSON.stringify({ message: 'ok' }));
+    res.status(200).json({ message: 'ok' });
 });
 
 router.post('/upload', upload.single('file'), function (req, res, next) {
@@ -333,7 +333,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                     user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
                     user.save();
 
-                    res.status(200).json(JSON.stringify({ message: 'ok' }));
+                    res.status(200).json({ message: 'ok' });
                 });
             }
         });
