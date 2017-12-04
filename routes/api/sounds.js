@@ -141,7 +141,7 @@ router.get('/', function(req, res, next) {
             } else {
                 // Handle the results and return success response
                 handleSoundResults(populatedResults, function(transformedResults) {
-                    res.status(200).json(JSON.stringify({ sounds: transformedResults }));
+                    res.status(200).json({ sounds: transformedResults });
                 });
             }
         })
