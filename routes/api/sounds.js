@@ -130,7 +130,7 @@ router.get('/', function(req, res, next) {
         // Map the results into Sound objects
         var results = results.map(function(result) {
             var mapped = new Sound(result.obj);
-            mapped.distance = result.distance;
+            mapped.distance = result.dis;
             return mapped;
         });
         // Populate the Sound objects with certain user properties
