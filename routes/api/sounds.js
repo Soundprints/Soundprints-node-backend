@@ -168,6 +168,7 @@ var handleSoundResults = function(results, callback) {
             displayName: original.user.displayName,
             profileImageUrl: original.user.profileImageUrl
         }
+        transformed.submissionDate = original.createdAt.getTime()/1000.0;
         transformed.distance = original.distance;
         transformed.duration = original.duration;
 
