@@ -168,7 +168,7 @@ var handleSoundResults = function(results, callback) {
             displayName: original.user.displayName,
             profileImageUrl: original.user.profileImageUrl
         }
-        transformed.distance = original.dis;
+        transformed.distance = original.distance;
         transformed.duration = original.duration;
 
         return transformed;
