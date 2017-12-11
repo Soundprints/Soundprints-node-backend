@@ -39,7 +39,7 @@ var uploadSound = function(localPath, soundObject, callback) {
     // const fileInfo = fileType(buffer);
 
     // Generate the name under which the file will be stored on cloud storage -> SOUND_ID.EXT
-    const storageDestination = soundObject._id // + '.' + fileInfo.ext;
+    const storageDestination = String(soundObject._id) // + '.' + fileInfo.ext;
 
     // Upload local file to the 'sounds' bucket
     soundsBucket.upload(localPath, { destination: storageDestination }, function(err, file, apiResponse) {
