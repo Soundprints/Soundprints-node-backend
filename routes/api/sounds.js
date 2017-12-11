@@ -194,7 +194,7 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
                 // Get the cloud storage signed URL
                 storage.obtainSoundSignedUrl(result.storageFileName, minutes, function(error, resourceUrl, expires) {
                     if (resourceUrl) {
-                        res.status(200).json({ url: resourceUrl, expirationDate: expires.getTime()/1000.0 });
+                        res.status(200).json({ url: resourceUrl, expirationDate: expires/1000.0 });
                     } else {
                         // The link generation should not fail, so treat this as a server error
                         const error = ApiError.general.serverError;

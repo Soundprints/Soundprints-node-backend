@@ -36,9 +36,7 @@ var uploadSound = function(localPath, soundObject, callback) {
 
     // Obtain info of file (extension and mimetype)
     // const buffer = readChunk.sync(localPath, 0, 4100);
-    // console.log('buffer: ' + buffer);
     // const fileInfo = fileType(buffer);
-    // console.log('fileInfo: ' + fileInfo)
 
     // Generate the name under which the file will be stored on cloud storage -> SOUND_ID.EXT
     const storageDestination = soundObject._id // + '.' + fileInfo.ext;
