@@ -60,5 +60,11 @@ typings/
 # Google cloud storage keyfile
 Soundprints-c479fa7e268d.json
 
-# Start node script
+# Start node scripts
 start-node.sh
+start-node-development.sh
+stop-node-development.sh
+restart-node-development.sh
+
+# Sound uploads
+sound-uploads
