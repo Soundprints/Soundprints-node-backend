@@ -17,46 +17,6 @@ var SoundSchema = new mongoose.Schema({
     storageFileName: String
 }, { timestamps: true });
 
-SoundSchema.statics.addMockedSounds = function(userId, lat, lon, radius, count) {
-
-    var sounds = [];
-    for (var i = 0; i < count; i++) {
-        // Lets generate a new location
-        var u = Math.random();
-        var v = Math.random();
-        var r = radius/111300
-        var w = r*Math.sqrt(u);
-        var t = 2*Math.PI*v;
-        var x = w*Math.cos(t) / Math.cos(lon);
-        var y = w*Math.sin(t);
-
-        var pointLat = lat + x;
-        var pointLon = lon + y;
-
-        // These sound files should already be uploaded to cloud storage
-        var availableSoundFiles = ['SampleAudio1.mp3', 'SampleAudio2.mp3'];
-        var availableSoundFileDurations = [28, 45];
-
-        var selectedSoundFileIndex = Math.floor(Math.random()*availableSoundFiles.length);
-
-        var newSound = new this({
-            name: 'Sample Sound',
-            description: 'This is a mocked sound',
-            duration: availableSoundFileDurations[selectedSoundFileIndex],
-            location: {
-                type: 'Point',
-                coordinates: [pointLon, pointLat]
-            },
-            user: mongoose.Types.ObjectId(userId),
-            storageFileName: availableSoundFiles[selectedSoundFileIndex]
-        });
-
-        sounds.push(newSound);
-    }
-
-    this.insertMany(sounds);
-}
-
 SoundSchema.index({ location: '2dsphere' });
 
 mongoose.model('Sound', SoundSchema);

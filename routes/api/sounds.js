@@ -215,48 +215,6 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
     });
 });
 
-router.post('/addMockedSounds', function(req, res, next) {
-
-    // Check if latitude, longitude, maxDistance and count are present
-    if (!req.query.lat || !req.query.lon || !req.query.maxDistance || !req.query.count) {
-        const error = ApiError.api.missingParameters;
-        return error.generateResponse(res);
-    }
-
-    // Extract the parameters
-    const lat = parseFloat(req.query.lat);
-    const lon = parseFloat(req.query.lon);
-    const maxDistance = parseFloat(req.query.maxDistance);
-    const count = parseInt(req.query.count, 10);
-
-    // Check if latitude, longitude, maxDistance and count are numbers
-    if (!areNumbers([lat, lon, maxDistance, count])) {
-        const error = ApiError.api.invalidParameters.nan;
-        return error.generateResponse(res);
-    }
-
-    // Check if latitude and longitude are valid
-    if (!latValid(lat) || !lonValid(lon)) {
-        const error = ApiError.api.invalidParameters.latlonOutOfRange;
-        return error.generateResponse(res);
-    }
-    // Check if distance is valid
-    if (maxDistance < 0) {
-        const error = ApiError.api.invalidParameters.invalidDistance.general;
-        return error.generateResponse(res);
-    }
-    // Check if count is valid
-    if (count < 1) {
-        const error = ApiError.api.invalidParameters.general;
-        return error.generateResponse(res);
-    }
-
-    // Add mocked sounds
-    Sound.addMockedSounds(req.userId, lat, lon, maxDistance, count);
-
-    res.status(200).json({ message: 'ok' });
-});
-
 router.post('/upload', upload.single('file'), function (req, res, next) {
 
     // Check if uploaded file is present
