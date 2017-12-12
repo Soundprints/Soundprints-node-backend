@@ -2,9 +2,11 @@
 var mongoose = require('mongoose');
 var router = require('express').Router();
 var ApiError = require('./apiErrors').ApiError;
+var ApiErrorObject = require('./apiErrors').ApiErrorObject;
 var storage = require('../../storage/storage');
 var multer = require('multer');
 var fs = require('fs');
+var mi = require('mediainfo-wrapper');
 
 var Sound = mongoose.model('Sound');
 var User = mongoose.model('User');
@@ -313,30 +315,46 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
             return error.generateResponse(res);
         }
 
-        // Upload the uploaded file to cloud storage
-        storage.uploadSound(req.file.path, savedSound, function(err, storageFileName) {
+        const localFilePath = req.file.path;
 
-            // Delete the local uploaded file
-            fs.unlinkSync(req.file.path);
+        // Get media info of the uploaded file
+        mi(localFilePath).then(function(data) {
+            const general = data[0].general;
+            const audio = data[0].audio;
 
-            if (err) {
-                savedSound.remove();
-                const error = ApiError.general.serverError;
+            // Check if audio codec is AAC
+            if (!audio || (audio.length != 1) || !audio[0].format || audio[0].format[0] != 'AAC') {
+                const error = ApiError.api.upload.wrongFileType;
                 return error.generateResponse(res);
-            } else {
-
-                // Update the storage file name in the sound object in DB
-                savedSound.storageFileName = storageFileName;
-                savedSound.save();
-
-                // Add new sound to the user
-                User.findById(req.userId, function(err, user) {
-                    user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
-                    user.save();
-
-                    res.status(200).json({ message: 'ok' });
-                });
             }
+
+            // Generate the name under which the file will be stored on cloud storage -> SOUND_ID.EXT
+            const storageDestination = String(savedSound._id) + '.aac'
+            
+            storage.uploadSound(localFilePath, storageDestination, function(err, storageFileName) {
+
+                // Delete the local uploaded file
+                fs.unlinkSync(localFilePath);
+        
+                if (err) {
+                    savedSound.remove();
+                    const error = ApiError.general.serverError;
+                    return error.generateResponse(res);
+                } else {
+    
+                    // Update the storage file name in the sound object in DB
+                    savedSound.storageFileName = storageFileName;
+                    savedSound.save();
+    
+                    // Add new sound to the user
+                    User.findById(req.userId, function(err, user) {
+                        user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
+                        user.save();
+    
+                        res.status(200).json({ message: 'ok' });
+                    });
+                }
+            });
         });
     })
 });
