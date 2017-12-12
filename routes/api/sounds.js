@@ -266,65 +266,90 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     }
 
     // Check if name, description, latitude and longitude are present
-    if (!req.body.name || !req.body.description || !req.body.lat || !req.body.lon || !req.body.duration) {
+    if (!req.body.lat || !req.body.lon) {
+        fs.unlinkSync(localFilePath);
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
 
     // Extract the parameters
-    const name = req.body.name;
-    const description = req.body.description;
     const lat = parseFloat(req.body.lat);
     const lon = parseFloat(req.body.lon);
-    const duration = parseFloat(req.body.duration);
+
+    var name = req.body.name;
+    if (!name) {
+        name = '';
+    }
+    var description = req.body.description;
+    if (!description) {
+        description = '';
+    }
 
     // Check if latitude and longitude are numbers
-    if (!areNumbers([lat, lon, duration])) {
+    if (!areNumbers([lat, lon])) {
+        fs.unlinkSync(localFilePath);
         const error = ApiError.api.invalidParameters.nan;
         return error.generateResponse(res);
     }
 
     // Check if latitude and longitude are valid
     if (!latValid(lat) || !lonValid(lon)) {
+        fs.unlinkSync(localFilePath);
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
     }
 
-    // Check if duration is valid
-    if (!duration > 0) {
-        const error = ApiError.api.invalidParameters.invalidDuration;
-        return error.generateResponse(res);
-    }
+    const localFilePath = req.file.path;
 
-    // Create a new Sound model instance
-    var newSound = new Sound({
-        name: name,
-        description: description,
-        duration: duration,
-        location: {
-            type: 'Point',
-            coordinates: [lon, lat]
-        },
-        user: mongoose.Types.ObjectId(req.userId)
-    })
+    // Get media info of the uploaded file
+    mi(localFilePath).then(function(data) {
+        const mediainfo = data[0];
 
-    // Save the new sound object
-    newSound.save(function(error, savedSound) {
-        if (error) {
-            const error = ApiError.general.serverError;
+        const getFromObject = (p, o) => p.reduce((xs, x) => (xs && xs[x]) ? xs[x] : null, o);
+
+        // Check if audio codec is AAC
+        const format = getFromObject(['audio', 0, 'format', 0], mediainfo);
+        if (format != 'AAC') {
+            fs.unlinkSync(localFilePath);
+            const error = ApiError.api.upload.wrongFileType;
             return error.generateResponse(res);
         }
 
-        const localFilePath = req.file.path;
+        // Get duration from the mediainfo
+        var duration = parseFloat(getFromObject(['audio', 0, 'duration', 0], mediainfo));
+        if (isNaN(duration)) {
+            fs.unlinkSync(localFilePath);
+            const error = ApiError.api.upload.durationNotAvailable;
+            return error.generateResponse(res);
+        }
+        // Convert to seconds 
+        duration = duration/1000.0;
 
-        // Get media info of the uploaded file
-        mi(localFilePath).then(function(data) {
-            const general = data[0].general;
-            const audio = data[0].audio;
+        // Check if duration is valid
+        if (!duration > 0) {
+            fs.unlinkSync(localFilePath);
+            const error = ApiError.api.invalidParameters.invalidDuration;
+            return error.generateResponse(res);
+        }
 
-            // Check if audio codec is AAC
-            if (!audio || (audio.length != 1) || !audio[0].format || audio[0].format[0] != 'AAC') {
-                const error = ApiError.api.upload.wrongFileType;
+        // Create a new Sound model instance
+        var newSound = new Sound({
+            name: name,
+            description: description,
+            duration: duration,
+            location: {
+                type: 'Point',
+                coordinates: [lon, lat]
+            },
+            user: mongoose.Types.ObjectId(req.userId)
+        });
+
+        // Save the new sound object
+        newSound.save(function(error, savedSound) {
+            if (error) {
+                fs.unlinkSync(localFilePath);
+                savedSound.remove();
+                const error = ApiError.general.serverError;
                 return error.generateResponse(res);
             }
 
@@ -341,22 +366,30 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                     const error = ApiError.general.serverError;
                     return error.generateResponse(res);
                 } else {
-    
+
                     // Update the storage file name in the sound object in DB
                     savedSound.storageFileName = storageFileName;
                     savedSound.save();
-    
+
                     // Add new sound to the user
                     User.findById(req.userId, function(err, user) {
+
+                        if (err) {
+                            savedSound.remove();
+                            const error = ApiError.general.serverError;
+                            return error.generateResponse(res);
+                        }
+
                         user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
                         user.save();
-    
+
                         res.status(200).json({ message: 'ok' });
                     });
                 }
             });
         });
-    })
+
+    });
 });
 
 module.exports = router;

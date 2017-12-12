@@ -42,7 +42,8 @@ const ApiErrorType = {
         notFound: new ApiErrorObject(404, 'api/not-found', 'Not found'),
         upload: {
             noFile: new ApiErrorObject(404, 'api/upload/no-file', 'No file received on upload'),
-            wrongFileType: new ApiErrorObject(400, 'api/upload/wrong-file-Ttpe', 'Uploaded file has wrong type')
+            wrongFileType: new ApiErrorObject(400, 'api/upload/wrong-file-Type', 'Uploaded file has wrong type'),
+            durationNotAvailable: new ApiErrorObject(400, 'api/upload/duration-not-available', 'Duration could not be obtained from the file')
         }
     }
 };
