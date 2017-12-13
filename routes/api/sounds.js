@@ -217,6 +217,8 @@ router.get('/:soundId/resourceUrl', function(req, res, next) {
 
 router.post('/upload', upload.single('file'), function (req, res, next) {
 
+    const localFilePath = req.file.path;
+
     // Check if uploaded file is present
     if (!req.file) {
         const error = ApiError.api.upload.noFile;
@@ -256,8 +258,6 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
         return error.generateResponse(res);
     }
-
-    const localFilePath = req.file.path;
 
     // Get media info of the uploaded file
     mi(localFilePath).then(function(data) {
