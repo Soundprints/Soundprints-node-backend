@@ -232,15 +232,9 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         return error.generateResponse(res);
     }
 
-    console.log('body lat: ' + req.body.lat);
-    console.log('body lon: ' + req.body.lon);
-
     // Extract the parameters
     const lat = parseFloat(req.body.lat);
     const lon = parseFloat(req.body.lon);
-
-    console.log('parsed lat: ' + lat);
-    console.log('parsed lon: ' + lon);
 
     var name = req.body.name;
     if (!name) {
