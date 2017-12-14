@@ -14,7 +14,8 @@ var SoundSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
-    storageFileName: String
+    storageFileName: String,
+    soundType: String
 }, { timestamps: true });
 
 SoundSchema.index({ location: '2dsphere' });
