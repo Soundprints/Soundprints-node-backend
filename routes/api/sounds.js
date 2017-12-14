@@ -30,10 +30,14 @@ function lonValid(lon) {
     return lon >= -180 && lon <= 180;
 }
 
+function soundTypeValid(type) {
+    return type === 'normal' || type === 'premium';
+}
+
 router.get('/', function(req, res, next) {
 
     // Check if latitude, longitude and maxDistance are present
-    if (!req.query.lat || !req.query.lon || !req.query.maxDistance) {
+    if (!req.query.lat || !req.query.lon || !req.query.maxDistance || !req.query.soundType) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
     }
@@ -42,6 +46,7 @@ router.get('/', function(req, res, next) {
     const lat = parseFloat(req.query.lat);
     const lon = parseFloat(req.query.lon);
     const maxDistance = parseFloat(req.query.maxDistance);
+    const soundType = String(req.query.soundType);
 
     // Check if latitude, longitude and maxDistance are numbers
     if (!areNumbers([lat, lon, maxDistance])) {
@@ -59,11 +64,19 @@ router.get('/', function(req, res, next) {
         const error = ApiError.api.invalidParameters.invalidDistance.general;
         return error.generateResponse(res);
     }
+    // Check if soundType is valid
+    if (!soundTypeValid(soundType)) {
+        const error = ApiError.api.invalidParameters.invalidSoundType;
+        return error.generateResponse(res);
+    }
 
     // Create query options for the geoNear query
     var queryOptions = {
         spherical: true,
-        maxDistance: maxDistance
+        maxDistance: maxDistance,
+        query: {
+            soundType: soundType
+        }
     }
 
     // Handle minDistance parameter
@@ -173,6 +186,7 @@ var handleSoundResults = function(results, callback) {
         transformed.submissionDate = original.createdAt.getTime()/1000.0;
         transformed.distance = original.distance;
         transformed.duration = original.duration;
+        transformed.soundType = original.soundType;
 
         return transformed;
     });
@@ -226,7 +240,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     }
 
     // Check if name, description, latitude and longitude are present
-    if (!req.body.lat || !req.body.lon) {
+    if (!req.body.lat || !req.body.lon || !req.body.soundType) {
         fs.unlinkSync(localFilePath);
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
@@ -235,6 +249,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     // Extract the parameters
     const lat = parseFloat(req.body.lat);
     const lon = parseFloat(req.body.lon);
+    const soundType = String(req.body.soundType);
 
     var name = req.body.name;
     if (!name) {
@@ -256,6 +271,12 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
     if (!latValid(lat) || !lonValid(lon)) {
         fs.unlinkSync(localFilePath);
         const error = ApiError.api.invalidParameters.latlonOutOfRange;
+        return error.generateResponse(res);
+    }
+    // Check if soundType is valid
+    if (!soundTypeValid(soundType)) {
+        fs.unlinkSync(localFilePath);
+        const error = ApiError.api.invalidParameters.invalidSoundType;
         return error.generateResponse(res);
     }
 
@@ -299,7 +320,8 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                 type: 'Point',
                 coordinates: [lon, lat]
             },
-            user: mongoose.Types.ObjectId(req.userId)
+            user: mongoose.Types.ObjectId(req.userId),
+            soundType: soundType
         });
 
         // Save the new sound object
