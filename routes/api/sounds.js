@@ -159,7 +159,7 @@ router.get('/', function(req, res, next) {
                     res.status(200).json({ sounds: transformedResults });
                 });
             }
-        })
+        });
     });
 
 });
@@ -363,7 +363,20 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                         user.sounds.push(mongoose.Types.ObjectId(savedSound._id));
                         user.save();
 
-                        res.status(200).json({ message: 'ok' });
+                        savedSound.distance = 0.0;
+
+                        // Populate the Sound objects with certain user properties
+                        Sound.populate([savedSound], { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
+                            if (error) {
+                                const error = ApiError.general.serverError;
+                                return error.generateResponse(res);
+                            } else {
+                                // Handle the results and return success response
+                                handleSoundResults(populatedResults, function(transformedResults) {
+                                    res.status(200).json({ uploadedSound: transformedResults[0] });
+                                });
+                            }
+                        });
                     });
                 }
             });
