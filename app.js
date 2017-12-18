@@ -92,8 +92,12 @@ app.use(function(err, req, res, next) {
 });
 
 // finally, let's start our server...
-var server = app.listen( process.env.PORT || 8080, function(){
-    console.log('Listening on port ' + server.address().port);
-});
+// var server = app.listen( process.env.PORT || 8080, function(){
+//     console.log('Listening on address ' + server.address().address);
+//     console.log('Listening on port ' + server.address().port);
+// });
+
+var server = http.createServer();
+server.listen(process.env.PORT || 8080, "0.0.0.0");
 
 module.exports.isProduction = isProduction;
