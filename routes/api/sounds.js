@@ -327,6 +327,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         // Save the new sound object
         newSound.save(function(error, savedSound) {
             if (error) {
+                console.log('error: ' + error);
                 fs.unlinkSync(localFilePath);
                 savedSound.remove();
                 const error = ApiError.general.serverError;
@@ -342,6 +343,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                 fs.unlinkSync(localFilePath);
         
                 if (err) {
+                    console.log('error: ' + err);
                     savedSound.remove();
                     const error = ApiError.general.serverError;
                     return error.generateResponse(res);
@@ -355,6 +357,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                     User.findById(req.userId, function(err, user) {
 
                         if (err) {
+                            console.log('error: ' + err);
                             savedSound.remove();
                             const error = ApiError.general.serverError;
                             return error.generateResponse(res);
@@ -368,6 +371,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                         // Populate the Sound objects with certain user properties
                         Sound.populate([savedSound], { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
                             if (error) {
+                                console.log('error: ' + err);
                                 const error = ApiError.general.serverError;
                                 return error.generateResponse(res);
                             } else {
