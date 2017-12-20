@@ -34,9 +34,100 @@ function soundTypeValid(type) {
     return type === 'normal' || type === 'premium';
 }
 
-router.get('/', function(req, res, next) {
+router.get('/timeBased', function(req, res, next) {
 
-    // Check if latitude, longitude and maxDistance are present
+    // Check if latitude, longitude, maxDistance and soundType are present
+    if (!req.query.soundType) {
+        const error = ApiError.api.missingParameters;
+        return error.generateResponse(res);
+    }
+
+    // Extract the parameters
+    const soundType = String(req.query.soundType);
+
+    // Check if soundType is valid
+    if (!soundTypeValid(soundType)) {
+        const error = ApiError.api.invalidParameters.invalidSoundType;
+        return error.generateResponse(res);
+    }
+
+    var query = {
+        soundType: soundType
+    };
+
+    var createdAtQuery = {};
+
+    if (req.query.upTo) {
+        const upTo = parseFloat(req.query.upTo);
+        // Check if upTo is a number
+        if (!areNumbers([upTo])) {
+            const error = ApiError.api.invalidParameters.nan;
+            return error.generateResponse(res);
+        }
+        const upToDate = new Date(upTo*1000.0);
+        createdAtQuery.$lt = upToDate.toISOString();
+    }
+
+    if (req.query.since) {
+        const since = parseFloat(req.query.since);
+        // Check if since is a number
+        if (!areNumbers([since])) {
+            const error = ApiError.api.invalidParameters.nan;
+            return error.generateResponse(res);
+        }
+        const sinceDate = new Date(since*1000.0);
+        createdAtQuery.$gt = sinceDate.toISOString();
+    }
+
+    if (Object.keys(createdAtQuery).length > 0) {
+        query.createdAt = createdAtQuery;
+    }
+
+    var limit = 0;
+    if (req.query.limit) {
+        const limitParam = parseInt(req.query.limit);
+        // Check if limitParam is a number
+        if (!areNumbers([limitParam])) {
+            const error = ApiError.api.invalidParameters.nan;
+            return error.generateResponse(res);
+        }
+        limit = limitParam;
+    }
+
+    // Query the sounds which were added after 'upToDate' and have sound type 'soundType'.
+    // Sort them from newest to oldest and limit them to 'limit'.
+    Sound.find(query)
+    .sort('-createdAt')
+    .limit(limit)
+    .exec(function(err, results) {
+        if (err) {
+            console.log('error: ' + err);
+            const error = ApiError.general.serverError;
+            return error.generateResponse(res);
+        }
+        // Map the results into Sound objects
+        var results = results.map(function(result) {
+            return new Sound(result);
+        });
+
+        // Populate the Sound objects with certain user properties
+        Sound.populate(results, { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
+            if (err) {
+                const error = ApiError.general.serverError;
+                return error.generateResponse(res);
+            } else {
+                // Handle the results and return success response
+                handleSoundResults(populatedResults, function(transformedResults) {
+                    res.status(200).json({ sounds: transformedResults });
+                });
+            }
+        });
+    });
+});
+
+router.get('/locationBased', function(req, res, next) {
+
+    // Check if latitude, longitude, maxDistance and soundType are present
     if (!req.query.lat || !req.query.lon || !req.query.maxDistance || !req.query.soundType) {
         const error = ApiError.api.missingParameters;
         return error.generateResponse(res);
@@ -140,7 +231,11 @@ router.get('/', function(req, res, next) {
 
     // Execute the geoNear query
 
-    Sound.geoNear(point, queryOptions, function(error, results, stats) {
+    Sound.geoNear(point, queryOptions, function(err, results, stats) {
+        if (err) {
+            const error = ApiError.general.serverError;
+            return error.generateResponse(res);
+        }
 
         // Map the results into Sound objects
         var results = results.map(function(result) {
@@ -150,7 +245,7 @@ router.get('/', function(req, res, next) {
         });
         // Populate the Sound objects with certain user properties
         Sound.populate(results, { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
-            if (error) {
+            if (err) {
                 const error = ApiError.general.serverError;
                 return error.generateResponse(res);
             } else {
@@ -327,6 +422,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
         // Save the new sound object
         newSound.save(function(error, savedSound) {
             if (error) {
+                console.log('error: ' + error);
                 fs.unlinkSync(localFilePath);
                 savedSound.remove();
                 const error = ApiError.general.serverError;
@@ -342,6 +438,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                 fs.unlinkSync(localFilePath);
         
                 if (err) {
+                    console.log('error: ' + err);
                     savedSound.remove();
                     const error = ApiError.general.serverError;
                     return error.generateResponse(res);
@@ -355,6 +452,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                     User.findById(req.userId, function(err, user) {
 
                         if (err) {
+                            console.log('error: ' + err);
                             savedSound.remove();
                             const error = ApiError.general.serverError;
                             return error.generateResponse(res);
@@ -368,6 +466,7 @@ router.post('/upload', upload.single('file'), function (req, res, next) {
                         // Populate the Sound objects with certain user properties
                         Sound.populate([savedSound], { path: 'user', select: 'profileImageUrl displayName' }, function(err, populatedResults) {
                             if (error) {
+                                console.log('error: ' + err);
                                 const error = ApiError.general.serverError;
                                 return error.generateResponse(res);
                             } else {
