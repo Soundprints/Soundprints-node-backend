@@ -51,7 +51,12 @@ router.get('/timeBased', function(req, res, next) {
         return error.generateResponse(res);
     }
 
-    var upToDate = new Date();
+    var query = {
+        soundType: soundType
+    };
+
+    var createdAtQuery = {};
+
     if (req.query.upTo) {
         const upTo = parseFloat(req.query.upTo);
         // Check if upTo is a number
@@ -59,7 +64,23 @@ router.get('/timeBased', function(req, res, next) {
             const error = ApiError.api.invalidParameters.nan;
             return error.generateResponse(res);
         }
-        upToDate = new Date(upTo*1000.0);
+        const upToDate = new Date(upTo*1000.0);
+        createdAtQuery.$lt = upToDate.toISOString();
+    }
+
+    if (req.query.since) {
+        const since = parseFloat(req.query.since);
+        // Check if since is a number
+        if (!areNumbers([since])) {
+            const error = ApiError.api.invalidParameters.nan;
+            return error.generateResponse(res);
+        }
+        const sinceDate = new Date(since*1000.0);
+        createdAtQuery.$gt = sinceDate.toISOString();
+    }
+
+    if (Object.keys(createdAtQuery).length > 0) {
+        query.createdAt = createdAtQuery;
     }
 
     var limit = 0;
@@ -75,12 +96,7 @@ router.get('/timeBased', function(req, res, next) {
 
     // Query the sounds which were added after 'upToDate' and have sound type 'soundType'.
     // Sort them from newest to oldest and limit them to 'limit'.
-    Sound.find({
-        createdAt: {
-            $lt: upToDate.toISOString(),
-        },
-        soundType: soundType
-    })
+    Sound.find(query)
     .sort('-createdAt')
     .limit(limit)
     .exec(function(err, results) {
@@ -107,8 +123,6 @@ router.get('/timeBased', function(req, res, next) {
             }
         });
     });
-
-
 });
 
 router.get('/locationBased', function(req, res, next) {
